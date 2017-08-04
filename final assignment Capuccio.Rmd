@@ -52,49 +52,15 @@ length(posdropvar)
 ```
 
 There are 100 predictors with a percentage of missing values > 97%. 
-I remove this features from training dataset and create training2.
+I remove the first 7 variables because they are user details and the features with missing values. I have 52 predictors.
 
 ```{r}
 training2<-training[,-posdropvar]
-```
-
-##Linear discriminant analysis and collinearity
-
-I try to perform linear discriminant analysis on training set but there are collinear variables.
-
-```{r}
-modlda<-train(classe~., data=training2, method="lda") 
-```
-
-I explore the relation between timestamp_part1 and cvtd_timestamp by user_name.
-The variables cvtd_timestamp and  raw_timestamp_part_1 are correlated: 
-
-```{r}
-qplot(cvtd_timestamp, raw_timestamp_part_1,col=user_name,  data=training2, main="cvtd_timestamp and raw_timestamp_part_1 by user_name")
-qplot(cvtd_timestamp, user_name,  data=training2, main="cvtd_timestamp and user_name")
-qplot(raw_timestamp_part_1, user_name,  data=training2, main="raw_timestamp_part_1 and user_name")
-
+training2<-training2[,-c(1:7)]
 ```
 
 
-I try to find collinear variables using lda:
-
-```{r, warning=FALSE}
-#collinearity between user_name and raw_timestamp_part_1
-modlda<-train(classe~user_name+raw_timestamp_part_1, data=training2, method="lda") 
-
-#collinearity between user_name and cvtd_timestamp
-modlda<-train(classe~user_name+cvtd_timestamp, data=training2, method="lda") 
-
-#collinearity between raw_timestamp_part_1 and cvtd_timestamp
-modlda<-train(classe~raw_timestamp_part_1+cvtd_timestamp, data=training2, method="lda") 
-```
-
-
-To chose which are the variables to keep in the model, I try different combinations.
-I use the cross validation and calculate the accuracy in train and test set.
-I can't use the original testing set because I dont't have the class variable.
-So I create two partitions: 70% train and 30% test from original training data.
+I create two partitions: 70% train and 30% test from original training data.
 
 ```{r}
 set.seed(3523)
@@ -104,119 +70,54 @@ test<-training2[-inTrain,]
 ```
 
 
+##Linear discriminant analysis 
 
-## First attempt
-
-I delete X, username, timepart1 and cvtd_timestamp and I use only timepart2.
-X is only an ID variable.
 
 ```{r}
-modlda<-train(classe~., data=train[-c(1,2,3,5)], method="lda") 
-pred1<-predict(modlda, train[,-c(1,2,3,5)])
-confusionMatrix(pred1, train$classe)$overall[1] ##0.7182 train
-pred2<-predict(modlda, test[,-c(1,2,3,5)])
-confusionMatrix(pred2, test$classe)$overall[1] ##0.7147 train
-
+modlda<-train(classe~., data=train, method="lda") 
+pred<-predict(modlda, test)
+confusionMatrix(pred, test$classe)$overall[1]
 ```
 
+Linear discriminant analysis has an accuracy equal to 0.7016 on test set. 
 
-
-## Second attempt
-
-I delete X, user_name and cvtd_timestamp and I use timepart1 and timepart2
-
-```{r}
-modlda<-train(classe~., data=train[,-c(1,2,5)], method="lda") 
-pred1<-predict(modlda, train[,-c(1,2,5)])
-confusionMatrix(pred1, train$classe)$overall[1] ##0.7225
-pred2<-predict(modlda, test[,-c(1,2,5)])
-confusionMatrix(pred2, test$classe)$overall[1] ##0.7167
-```
-
-
-## Third attempt
-
-I delete X, timepart1 and cvtd_timestamp and I use user_name and timepart2
-
-```{r}
-modlda<-train(classe~., data=train[,-c(1,3,5)], method="lda") 
-pred1<-predict(modlda, train[,-c(1,3,5)])
-confusionMatrix(pred1, train$classe)$overall[1] ##0.7504
-pred2<-predict(modlda, test[,-c(1,3,5)])
-confusionMatrix(pred2, test$classe)$overall[1] ##0.7466
-```
-
-## Fourth attempt
-
-I delete X, username and timepart1 and I use cvtd_timestamp and timepart2
-
-```{r}
-modlda<-train(classe~., data=train[-c(1,2,3)], method="lda") 
-pred1<-predict(modlda, train[,-c(1,2,3)])
-confusionMatrix(pred1, train$classe)$overall[1] ##0.8571
-pred2<-predict(modlda, test[,-c(1,2,3)])
-confusionMatrix(pred2, test$classe)$overall[1] ##0.8574
-
-```
-
-
-##Final Linear discriminant analysis
-
-I choose to delete X, username and timepart1 and use cvtd_timestamp and timepart2.
-Linear discriminant analysis has an accuracy equal to 0.8571 on train set and 0.8574 on test set. The tables below are the confusion matrix on train and test test.
-
-```{r}
-confusionMatrix(pred1, train$classe)$table
-confusionMatrix(pred2, test$classe)$table
-```
 
 ##Decision tree
 
-I try to use a decision tree on training set without collinear variables.
+I try to use a decision tree.
 
 ```{r}
-modDT<-train(classe~.,data=train[,-c(1,2,3)], method="rpart")
+modDT<-train(classe~.,data=train, method="rpart")
 plot(modDT$finalModel,margin=0.2,uniform=T,branch=0.1)
 text(modDT$finalModel,use.n=T,cex=0.6)
 
-pred1<-predict(modDT, train)
-confusionMatrix(pred1, train$classe)$overall[1] #0.6325
-pred2<-predict(modDT, test)
-confusionMatrix(pred2, test$classe)$overall[1] #0.6210
+pred<-predict(modDT, test)
+confusionMatrix(pred, test$classe)$overall[1] #0.4961
 ```
 
-```{r}
-confusionMatrix(pred1, train$classe)$table
-confusionMatrix(pred2, test$classe)$table
-```
-
-Decision tree has an accuracy equal to 0.5361. It is lower than lda method.
+Decision tree has an accuracy equal to 0.4961. It is lower than lda method.
 
 ##Random forest
-I try to adapt a random forest, but my pc cannot allocate a vector of 2.9Gb.
+I try to adapt a random forest.
 
 ```{r}
-# modRF<-train(classe~.,data=training2[,-c(1,2,3)], method="rf")
-# cannot allocate vector of size 2.9 Gb
+fitControl <- trainControl(method = 'cv', number = 3)
+modelRF <- train(classe ~.,data = train,
+                  trControl = fitControl,method = 'rf',ntree = 100)
+pred<-predict(modelRF, test)
+confusionMatrix(pred, test$classe)$overall[1] #0.9918
+
 ```
 
 ##Prediction 
 
-The final model is modlda with accuracy equal to 0.8571 on test set and 0.8574 on test set.
+The final model is modRF with accuracy equal to 0.9918 on test set.
 
-To predict the 20 new observations on testing set, I adapt the final model on whole training set.
+I predict the 20 new observations on testing set:
 
-
-```{r}
-modlda<-train(classe~., data=training2[-c(1,2,3)], method="lda") 
-pred<-predict(modlda, training2[,-c(1,2,3)])
-confusionMatrix(pred, training2$classe)$overall[1]
-```
-
-The accuracy on whole training set is equal to 0.8567 and these are the predicted classes of my final model:
 
 ```{r}
-predict(modlda, testing)
+predict(modelRF, testing)
 ```
 
 
