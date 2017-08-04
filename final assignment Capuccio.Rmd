@@ -5,7 +5,7 @@ date: "04 August 2017"
 output: html_document
 ---
 
-#Final assignment
+##Final assignment
 
 ##Descriptive statistics and cleaning data
 
@@ -58,7 +58,7 @@ I remove this features from training dataset and create training2.
 training2<-training[,-posdropvar]
 ```
 
-#Linear discriminant analysis and collinearity
+##Linear discriminant analysis and collinearity
 
 I try to perform linear discriminant analysis on training set but there are collinear variables.
 
@@ -160,7 +160,7 @@ confusionMatrix(pred2, test$classe)$overall[1] ##0.8574
 ```
 
 
-#Final Linear discriminant analysis
+##Final Linear discriminant analysis
 
 I choose to delete X, username and timepart1 and use cvtd_timestamp and timepart2.
 Linear discriminant analysis has an accuracy equal to 0.8571 on train set and 0.8574 on test set. The tables below are the confusion matrix on train and test test.
@@ -170,7 +170,7 @@ confusionMatrix(pred1, train$classe)$table
 confusionMatrix(pred2, test$classe)$table
 ```
 
-#Decision tree
+##Decision tree
 
 I try to use a decision tree on training set without collinear variables.
 
@@ -192,7 +192,7 @@ confusionMatrix(pred2, test$classe)$table
 
 Decision tree has an accuracy equal to 0.5361. It is lower than lda method.
 
-#Random forest
+##Random forest
 I try to adapt a random forest, but my pc cannot allocate a vector of 2.9Gb.
 
 ```{r}
@@ -200,7 +200,7 @@ I try to adapt a random forest, but my pc cannot allocate a vector of 2.9Gb.
 # cannot allocate vector of size 2.9 Gb
 ```
 
-#Prediction 
+##Prediction 
 
 The final model is modlda with accuracy equal to 0.8571 on test set and 0.8574 on test set.
 
